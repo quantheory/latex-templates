@@ -1,8 +1,7 @@
 \NeedsTeXFormat{LaTeX2e}[2011/06/27]
 \documentclass[12pt]{article}[2007/10/19]
 
-\usepackage{expl3}[2014/01/07]
-\usepackage{xparse}[2013-12-31]
+\usepackage{cool}
 
 \usepackage[utf8]{inputenc}[2008/03/30]
 \usepackage[T1]{fontenc}[2005/09/27]
@@ -25,82 +24,6 @@
 
 \newcommand\codename[1]{\textit{[#1]}}
 \newcommand\deriv[2]{\frac{\mathrm{d} #1}{\mathrm{d} #2}}
-
-% Fancy partial derivative function in LaTeX3
-\ExplSyntaxOn
- % Integers for the total number of derivatives in the numerator, and the
- % current number in the denominator.
- \int_new:N\l_hw_partderiv_numer_int
- \int_new:N\l_hw_partderiv_denom_int
- % Stored denominator variable, and the current one to compare to.
- \tl_new:N\l_hw_partderiv_stored_tl
- \tl_new:N\l_hw_partderiv_current_tl
- % Small wrapper to ignore an argument, and increment a counter upon being
- % called.
- \cs_new:Nn\hw_increment_numer:N{\int_incr:N\l_hw_partderiv_numer_int}
- % Function to print a partial corresponding to what's in our denominator
- % variables right now.
- \cs_new:Nn\hw_print_current_denom:{
-   \int_compare:nNnTF{\int_use:N\l_hw_partderiv_denom_int} = {1} {
-     \partial
-   } {
-     \partial^{\int_use:N\l_hw_partderiv_denom_int}
-   }
-   \tl_use:N\l_hw_partderiv_stored_tl
- }
- % Tricky function: we want to keep a running total of items in the denominator,
- % and print something only when we are done with items in a row that are the
- % same.
- \cs_new:Nn\hw_process_denom:n{
-   % At the end, this function will be called empty; in that case, we should
-   % print whatever is present in our stored variables right now, then wipe them
-   % for the next invocation.
-   \tl_if_empty:nTF{#1} {
-     \hw_print_current_denom:
-     \int_zero:N\l_hw_partderiv_denom_int
-     \tl_clear:N\l_hw_partderiv_stored_tl
-   } {
-     % Otherwise, if we have nothing stored, we can assume that we're starting
-     % from nothing. Just store the current input, and wait to see if the next
-     % token matches, incrementing the counter along the way.
-     \tl_if_empty:NTF\l_hw_partderiv_stored_tl {
-       \int_incr:N\l_hw_partderiv_denom_int
-       \tl_set:Nn\l_hw_partderiv_stored_tl{#1}
-     }{
-       % If we have something stored, and the new input matches, keep going
-       % to see how many matches we will eventually get.
-       \tl_set:Nn\l_hw_partderiv_current_tl{#1}
-       \tl_if_eq:NNTF\l_hw_partderiv_current_tl\l_hw_partderiv_stored_tl {
-         \int_incr:N\l_hw_partderiv_denom_int
-       }{
-         % If the input doesn't match our stored variable, print out what we
-         % have stored, then store the new one and see how many of *that* one
-         % we're going to get.
-         \hw_print_current_denom:
-         \int_set:Nn\l_hw_partderiv_denom_int\c_one
-         \tl_set:Nn\l_hw_partderiv_stored_tl{#1}
-       }
-     }
-   }
- }
- % Define the actual \partderiv command, with a numerator expression and a
- % comma-separated list of denominator expressions.
- \DeclareDocumentCommand\partderiv{m > {\SplitList { , } } m}{
-   % Zero out our numerator counter, then process the list by incrementing the
-   % counter until we've successfully counted all the denominator bits.
-   \int_zero:N\l_hw_partderiv_numer_int
-   \ProcessList {#2} {\hw_increment_numer:N}
-   % If we only have one thing in the list, we can write this out very simply.
-   \int_compare:nNnTF{\l_hw_partderiv_numer_int} = {1} {
-     \frac{\partial #1}{\partial #2}
-   } {
-     % Otherwise, raise the numerator \partial to the calculated value, then use
-     % \hw_process_denom:n to process the list. Call it once more after going
-     % through the whole list so that it can print out the last \partial.
-     \frac{\partial^{\int_use:N\l_hw_partderiv_numer_int} #1}{\ProcessList {#2} {\hw_process_denom:n} \hw_process_denom:n{}}
-   }
- }
-\ExplSyntaxOff
 
 \newcommand\recip[1]{\frac{1}{#1}}
 
